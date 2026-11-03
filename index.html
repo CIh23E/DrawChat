@@ -2,28 +2,968 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+<meta name="google-site-verification" content="lISxt2ZoP-hGu5yY6kDMfLWy9ADixy6tvv04QNqu64g" />
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Draw Chat Cool</title>
-<meta name="description" content="Draw Chat Cool - Chat privat bersama teman.">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Draw Chat</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+:root{
+ --bg:#101512;--panel:#18221c;--panel2:#202d25;
+ --line:#2b3b30;--green:#35d07f;--text:#eff8f1;
+ --muted:#9aada0;--red:#f16d6d
+}
+body{margin:0;background:var(--bg);color:var(--text);
+font-family:Arial,sans-serif;min-height:100vh}
+button,input,select{font:inherit}
+button{cursor:pointer;border:0}
+input,select{background:#101a14;color:var(--text);
+border:1px solid var(--line);border-radius:10px;padding:12px;outline:none}
+input:focus,select:focus{border-color:var(--green)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.primary{background:var(--green);color:#07140b;font-weight:bold;
+padding:11px 15px;border-radius:10px}
+.secondary{background:var(--panel2);color:var(--text);
+padding:10px 13px;border-radius:9px}
+.danger{background:#482426;color:#ffaaaa;padding:9px 12px;border-radius:9px}
+#login{max-width:420px;margin:10vh auto;padding:20px}
+.logo{font-size:29px;font-weight:bold;color:var(--green);margin-bottom:8px}
+.card,.panel{background:var(--panel);border:1px solid var(--line);
+border-radius:15px;padding:16px}
+#login input,#login select{width:100%;margin:7px 0 13px}
+#login button{width:100%;margin-top:8px}
+#app{max-width:1050px;margin:auto;min-height:100vh;display:flex;flex-direction:column}
+header{height:64px;padding:0 17px;border-bottom:1px solid var(--line);
+display:flex;align-items:center;justify-content:space-between;background:var(--panel)}
+.brand{font-size:21px;font-weight:bold;color:var(--green)}
+main{padding:15px;flex:1}
+.topbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.tab{background:var(--panel2);color:var(--muted);padding:11px 15px;border-radius:10px}
+.tab.active{background:#23432f;color:#8df0b3}
+.panel{margin-bottom:13px}
+.panel h3{margin:0 0 12px;font-size:16px}
+.searchrow{display:flex;gap:8px}
+.searchrow input{flex:1;min-width:0}
+.item{display:flex;align-items:center;gap:10px;padding:11px 3px;
+border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.avatar{width:40px;height:40px;border-radius:50%;background:#244a32;
+display:grid;place-items:center;color:#a4ffc0;font-weight:bold;flex-shrink:0}
+.iteminfo{flex:1;min-width:0}
+.iteminfo strong{display:block;overflow:hidden;text-overflow:ellipsis}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.empty{color:var(--muted);font-size:13px;padding:12px 3px}
+#chatView{height:calc(100vh - 95px);min-height:400px;
+display:flex;flex-direction:column;background:var(--panel);
+border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.chathead{padding:12px 14px;display:flex;gap:10px;align-items:center;
+border-bottom:1px solid var(--line)}
+.chathead button{background:var(--panel2);color:var(--text);
+padding:9px 12px;border-radius:9px}
+#chatMessages{flex:1;overflow-y:auto;padding:15px;display:flex;
+flex-direction:column;gap:9px}
+.bubble{max-width:82%;padding:10px 12px;border-radius:13px;
+background:#25352a;align-self:flex-start;overflow-wrap:anywhere;
+white-space:pre-wrap}
+.bubble.mine{background:#205b39;align-self:flex-end}
+.bubble time{display:block;font-size:10px;color:#c1d4c5;margin-top:5px}
+.sendrow{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.sendrow input{flex:1;min-width:0}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+background:#26372b;border:1px solid #42664b;padding:11px 16px;
+border-radius:10px;z-index:20;display:none;max-width:90%;text-align:center}
+#busy{font-size:12px;color:var(--muted);padding:5px 0}
+@media(max-width:600px){
+ main{padding:10px}
+ #login{margin:7vh 12px;padding:12px}
+ .panel{padding:12px}
+ #chatView{height:calc(100dvh - 90px);min-height:350px}
+ .bubble{max-width:90%}
+}
+</style>
 </head>
 <body>
-<div id="status">Memuat Draw Chat...</div>
+
+<section id="login">
+ <div class="logo">✦ Draw Chat</div>
+ <p class="muted" id="loginSubtitle">Chat pribadi bersama temanmu.</p>
+ <div class="card">
+  <label class="small" id="usernameLabel">Username</label>
+  <input id="usernameInput" maxlength="20" placeholder="Contoh: player123">
+  <label class="small" id="languageLabel">Bahasa aplikasi</label>
+  <select id="languageSelect">
+   <option value="id">Indonesia</option><option value="en">English</option>
+   <option value="ms">Malay</option><option value="ja">日本語</option>
+   <option value="ko">한국어</option><option value="zh">中文</option>
+   <option value="ar">العربية</option><option value="es">Español</option>
+   <option value="fr">Français</option><option value="de">Deutsch</option>
+   <option value="pt">Português</option><option value="ru">Русский</option>
+   <option value="th">ไทย</option><option value="vi">Tiếng Việt</option>
+   <option value="hi">हिन्दी</option>
+  </select>
+  <button class="primary" onclick="login()" id="loginButton">Masuk</button>
+  <p class="muted small" id="loginNote">
+   Username hanya bisa ditentukan sekali. Gunakan huruf, angka, atau garis bawah.
+  </p>
+ </div>
+</section>
+
+<section id="app" class="hidden">
+ <header>
+  <div class="brand">✦ Draw Chat</div>
+  <div style="display:flex;gap:8px;align-items:center">
+   <span class="small muted" id="myName"></span>
+   <select id="appLanguage" onchange="changeLanguage(this.value)" style="padding:8px;max-width:115px">
+    <option value="id">ID</option><option value="en">EN</option>
+    <option value="ms">MS</option><option value="ja">JA</option>
+    <option value="ko">KO</option><option value="zh">ZH</option>
+    <option value="ar">AR</option><option value="es">ES</option>
+    <option value="fr">FR</option><option value="de">DE</option>
+    <option value="pt">PT</option><option value="ru">RU</option>
+    <option value="th">TH</option><option value="vi">VI</option>
+    <option value="hi">HI</option>
+   </select>
+  </div>
+ </header>
+
+ <main id="homeView">
+  <div class="topbar">
+   <button class="tab active" id="friendsTab" onclick="showTab('friends')">👥 Friends</button>
+   <button class="tab" id="requestsTab" onclick="showTab('requests')">📨 Requests</button>
+  </div>
+
+  <section class="panel">
+   <h3 id="searchTitle">🔎 Cari teman</h3>
+   <div class="searchrow">
+    <input id="searchInput" maxlength="20" placeholder="Cari username..."
+      onkeydown="if(event.key==='Enter')searchUsers()">
+    <button class="primary" onclick="searchUsers()" id="searchButton">Cari</button>
+   </div>
+   <div id="results"></div>
+  </section>
+
+  <section class="panel" id="friendsPanel">
+   <h3 id="friendsTitle">👥 Teman saya</h3>
+   <div id="friends"><div class="empty">Memuat...</div></div>
+  </section>
+
+  <section class="panel hidden" id="requestsPanel">
+   <h3 id="requestsTitle">📨 Permintaan masuk</h3>
+   <div id="requests"><div class="empty">Memuat...</div></div>
+  </section>
+
+  <p class="muted small" id="accountNote">
+   Username akun tidak dapat diubah setelah dibuat.
+  </p>
+ </main>
+
+ <section id="chatView" class="hidden">
+  <div class="chathead">
+   <button onclick="closeChat()">←</button>
+   <div class="avatar" id="chatAvatar">?</div>
+   <div>
+    <strong id="chatName">Teman</strong>
+    <div class="small muted" id="chatStatus">Private chat</div>
+   </div>
+  </div>
+  <div id="chatMessages"><div class="empty">Belum ada pesan.</div></div>
+  <form class="sendrow" onsubmit="sendMessage(event)">
+   <input id="messageInput" maxlength="50000" autocomplete="off"
+    placeholder="Tulis pesan..." required>
+   <button class="primary" id="sendButton">➤</button>
+  </form>
+ </section>
+</section>
+
+<div id="toast"></div>
+
 <script>
-fetch("https://pastefy.app/LPVi8vmk/raw")
-.then(response => {
-  if (!response.ok) throw new Error("Gagal mengambil kode");
-  return response.text();
+const SUPABASE_URL="https://ilfsrkybaotyqhqvusno.supabase.co";
+const SUPABASE_KEY="sb_publishable_fXjDFVJRRT0B8OexwHF2fA_0_6Mguy_";
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let currentUser=null;
+let myUsername="";
+let activeFriend=null;
+let currentTab="friends";
+let realtimeChannel=null;
+let requestChannel=null;
+let messageChannel=null;
+let toastTimer=null;
+let audioContext=null;
+
+function unlockSounds(){
+ try{
+  if(!audioContext){
+   const AudioCtx=window.AudioContext||window.webkitAudioContext;
+   if(!AudioCtx)return;
+   audioContext=new AudioCtx();
+  }
+  if(audioContext.state==="suspended"){
+   audioContext.resume();
+  }
+ }catch(e){
+  console.log("Audio tidak tersedia:",e);
+ }
+}
+
+function playNotification(type){
+ if(!audioContext||audioContext.state!=="running")return;
+
+ const notes=type==="request"
+  ?[660,880]
+  :[880];
+
+ notes.forEach((frequency,index)=>{
+  const oscillator=audioContext.createOscillator();
+  const gain=audioContext.createGain();
+
+  oscillator.type="sine";
+  oscillator.frequency.value=frequency;
+  gain.gain.setValueAtTime(0.0001,audioContext.currentTime);
+  gain.gain.exponentialRampToValueAtTime(
+   0.15,audioContext.currentTime+0.02
+  );
+  gain.gain.exponentialRampToValueAtTime(
+   0.0001,audioContext.currentTime+0.18
+  );
+
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+
+  const start=audioContext.currentTime+index*0.22;
+  oscillator.start(start);
+  oscillator.stop(start+0.2);
+ });
+}
+
+document.addEventListener("pointerdown",unlockSounds,{once:true});
+
+const LANG={
+ id:{
+  subtitle:"Chat pribadi bersama temanmu.",username:"Username",language:"Bahasa aplikasi",
+  login:"Masuk",loginNote:"Username hanya bisa ditentukan sekali. Gunakan huruf, angka, atau garis bawah.",
+  search:"🔎 Cari teman",searchPlaceholder:"Cari username...",find:"Cari",
+  friends:"👥 Teman saya",requests:"📨 Permintaan masuk",account:"Username akun tidak dapat diubah setelah dibuat.",
+  add:"+ Add",sent:"Terkirim",accept:"Terima",reject:"Tolak",emptyFriends:"Belum punya teman.",
+  emptyRequests:"Tidak ada permintaan pertemanan.",noResults:"Pengguna tidak ditemukan.",
+  chat:"Private chat",message:"Tulis pesan...",send:"Kirim",back:"Kembali",
+  usernameInvalid:"Username harus 3–20 karakter dan hanya memakai huruf, angka, atau garis bawah.",
+  loginError:"Gagal masuk: ",usernameTaken:"Username sudah digunakan.",
+  requestSent:"Permintaan pertemanan terkirim.",requestError:"Gagal mengirim permintaan.",
+  accepted:"Permintaan diterima.",rejected:"Permintaan ditolak.",messageError:"Pesan gagal dikirim.",
+  noMessage:"Belum ada pesan.",searchError:"Pencarian gagal.",already:"Sudah berteman atau permintaan sudah ada.",
+  loading:"Memuat...",accountError:"Tidak dapat memuat akun.",loginAgain:"Silakan muat ulang halaman.",
+  saved:"Username sudah tersimpan dan tidak dapat diganti.",
+  requestFailed:"Aksi gagal. Coba lagi.",tooShort:"Masukkan minimal 2 karakter.",
+  typeMessage:"Tulis pesan terlebih dahulu."
+ },
+ en:{
+  subtitle:"Private chat with your friends.",username:"Username",language:"App language",
+  login:"Sign in",loginNote:"Your username can only be set once. Use letters, numbers or underscores.",
+  search:"🔎 Find friends",searchPlaceholder:"Search username...",find:"Search",
+  friends:"👥 My friends",requests:"📨 Incoming requests",account:"Your username cannot be changed after creation.",
+  add:"+ Add",sent:"Sent",accept:"Accept",reject:"Reject",emptyFriends:"No friends yet.",
+  emptyRequests:"No friend requests.",noResults:"User not found.",chat:"Private chat",
+  message:"Write a message...",send:"Send",back:"Back",
+  usernameInvalid:"Username must be 3–20 characters: letters, numbers or underscores.",
+  loginError:"Sign-in failed: ",usernameTaken:"Username already taken.",
+  requestSent:"Friend request sent.",requestError:"Could not send request.",
+  accepted:"Request accepted.",rejected:"Request rejected.",messageError:"Message failed.",
+  noMessage:"No messages yet.",searchError:"Search failed.",already:"Already friends or request exists.",
+  loading:"Loading...",accountError:"Could not load account.",loginAgain:"Please reload the page.",
+  saved:"Username is saved and cannot be changed.",requestFailed:"Action failed. Try again.",
+  tooShort:"Enter at least 2 characters.",typeMessage:"Write a message first."
+ },
+ ms:{
+  subtitle:"Sembang peribadi bersama rakan.",username:"Nama pengguna",language:"Bahasa aplikasi",
+  login:"Log masuk",loginNote:"Nama pengguna hanya boleh ditetapkan sekali.",
+  search:"🔎 Cari rakan",searchPlaceholder:"Cari nama pengguna...",find:"Cari",
+  friends:"👥 Rakan saya",requests:"📨 Permintaan masuk",account:"Nama pengguna tidak boleh ditukar.",
+  add:"+ Add",sent:"Dihantar",accept:"Terima",reject:"Tolak",emptyFriends:"Belum ada rakan.",
+  emptyRequests:"Tiada permintaan.",noResults:"Pengguna tidak ditemui.",chat:"Sembang peribadi",
+  message:"Tulis mesej...",send:"Hantar",back:"Kembali",
+  usernameInvalid:"Nama pengguna mesti 3–20 aksara.",loginError:"Log masuk gagal: ",
+  usernameTaken:"Nama pengguna telah digunakan.",requestSent:"Permintaan dihantar.",
+  requestError:"Gagal menghantar permintaan.",accepted:"Permintaan diterima.",
+  rejected:"Permintaan ditolak.",messageError:"Mesej gagal dihantar.",noMessage:"Tiada mesej.",
+  searchError:"Carian gagal.",already:"Sudah berkawan atau permintaan wujud.",
+  loading:"Memuatkan...",accountError:"Tidak dapat memuatkan akaun.",
+  loginAgain:"Muat semula halaman.",saved:"Nama pengguna tidak boleh ditukar.",
+  requestFailed:"Tindakan gagal.",tooShort:"Masukkan sekurang-kurangnya 2 aksara.",
+  typeMessage:"Tulis mesej dahulu."
+ },
+ ja:{
+  subtitle:"友達とのプライベートチャット。",username:"ユーザー名",language:"アプリの言語",
+  login:"ログイン",loginNote:"ユーザー名は一度だけ設定できます。",
+  search:"🔎 友達を検索",searchPlaceholder:"ユーザー名を検索...",find:"検索",
+  friends:"👥 友達",requests:"📨 受信リクエスト",account:"ユーザー名は変更できません。",
+  add:"+ 追加",sent:"送信済み",accept:"承認",reject:"拒否",emptyFriends:"友達はいません。",
+  emptyRequests:"リクエストはありません。",noResults:"ユーザーが見つかりません。",
+  chat:"プライベートチャット",message:"メッセージを書く...",send:"送信",back:"戻る",
+  usernameInvalid:"ユーザー名は3〜20文字です。",loginError:"ログイン失敗: ",
+  usernameTaken:"このユーザー名は使用されています。",requestSent:"リクエストを送信しました。",
+  requestError:"送信できませんでした。",accepted:"承認しました。",rejected:"拒否しました。",
+  messageError:"送信に失敗しました。",noMessage:"メッセージはありません。",
+  searchError:"検索に失敗しました。",already:"友達またはリクエスト済みです。",
+  loading:"読み込み中...",accountError:"アカウントを読み込めません。",
+  loginAgain:"ページを再読み込みしてください。",saved:"ユーザー名は変更できません。",
+  requestFailed:"操作に失敗しました。",tooShort:"2文字以上入力してください。",
+  typeMessage:"メッセージを入力してください。"
+ },
+ ko:{
+  subtitle:"친구와 비공개 채팅.",username:"사용자 이름",language:"앱 언어",
+  login:"로그인",loginNote:"사용자 이름은 한 번만 설정할 수 있습니다.",
+  search:"🔎 친구 찾기",searchPlaceholder:"사용자 이름 검색...",find:"검색",
+  friends:"👥 내 친구",requests:"📨 받은 요청",account:"사용자 이름은 변경할 수 없습니다.",
+  add:"+ 추가",sent:"전송됨",accept:"수락",reject:"거절",emptyFriends:"친구가 없습니다.",
+  emptyRequests:"요청이 없습니다.",noResults:"사용자를 찾을 수 없습니다.",
+  chat:"비공개 채팅",message:"메시지 입력...",send:"보내기",back:"뒤로",
+  usernameInvalid:"사용자 이름은 3~20자여야 합니다.",loginError:"로그인 실패: ",
+  usernameTaken:"이미 사용 중인 이름입니다.",requestSent:"친구 요청을 보냈습니다.",
+  requestError:"요청을 보내지 못했습니다.",accepted:"요청을 수락했습니다.",
+  rejected:"요청을 거절했습니다.",messageError:"메시지 전송 실패.",noMessage:"메시지가 없습니다.",
+  searchError:"검색 실패.",already:"이미 친구이거나 요청이 있습니다.",
+  loading:"불러오는 중...",accountError:"계정을 불러올 수 없습니다.",
+  loginAgain:"페이지를 새로고침하세요.",saved:"이름을 변경할 수 없습니다.",
+  requestFailed:"작업 실패.",tooShort:"두 글자 이상 입력하세요.",typeMessage:"메시지를 입력하세요."
+ },
+ zh:{
+  subtitle:"与朋友进行私人聊天。",username:"用户名",language:"应用语言",
+  login:"登录",loginNote:"用户名只能设置一次。",
+  search:"🔎 查找好友",searchPlaceholder:"搜索用户名...",find:"搜索",
+  friends:"👥 我的好友",requests:"📨 收到的请求",account:"用户名创建后无法更改。",
+  add:"+ 添加",sent:"已发送",accept:"接受",reject:"拒绝",emptyFriends:"还没有好友。",
+  emptyRequests:"没有好友请求。",noResults:"找不到用户。",
+  chat:"私人聊天",message:"输入消息...",send:"发送",back:"返回",
+  usernameInvalid:"用户名必须为3到20个字符。",loginError:"登录失败：",
+  usernameTaken:"用户名已被使用。",requestSent:"好友请求已发送。",
+  requestError:"发送请求失败。",accepted:"已接受请求。",rejected:"已拒绝请求。",
+  messageError:"消息发送失败。",noMessage:"暂无消息。",searchError:"搜索失败。",
+  already:"已经是好友或请求已存在。",loading:"加载中...",accountError:"无法加载账户。",
+  loginAgain:"请刷新页面。",saved:"用户名无法更改。",requestFailed:"操作失败。",
+  tooShort:"请输入至少两个字符。",typeMessage:"请先输入消息。"
+ },
+ ar:{
+  subtitle:"دردشة خاصة مع أصدقائك",username:"اسم المستخدم",language:"لغة التطبيق",
+  login:"دخول",loginNote:"يمكنك تحديد اسم المستخدم مرة واحدة فقط.",
+  search:"🔎 ابحث عن أصدقاء",searchPlaceholder:"ابحث عن اسم المستخدم...",find:"بحث",
+  friends:"👥 أصدقائي",requests:"📨 الطلبات الواردة",account:"لا يمكن تغيير اسم المستخدم.",
+  add:"+ إضافة",sent:"تم الإرسال",accept:"قبول",reject:"رفض",emptyFriends:"لا يوجد أصدقاء.",
+  emptyRequests:"لا توجد طلبات.",noResults:"المستخدم غير موجود.",
+  chat:"دردشة خاصة",message:"اكتب رسالة...",send:"إرسال",back:"رجوع",
+  usernameInvalid:"يجب أن يكون الاسم بين 3 و20 حرفًا.",loginError:"فشل الدخول: ",
+  usernameTaken:"اسم المستخدم مستخدم بالفعل.",requestSent:"تم إرسال طلب الصداقة.",
+  requestError:"فشل إرسال الطلب.",accepted:"تم قبول الطلب.",rejected:"تم رفض الطلب.",
+  messageError:"فشل إرسال الرسالة.",noMessage:"لا توجد رسائل.",searchError:"فشل البحث.",
+  already:"أنتم أصدقاء بالفعل أو يوجد طلب.",loading:"جار التحميل...",
+  accountError:"تعذر تحميل الحساب.",loginAgain:"أعد تحميل الصفحة.",
+  saved:"لا يمكن تغيير اسم المستخدم.",requestFailed:"فشلت العملية.",
+  tooShort:"أدخل حرفين على الأقل.",typeMessage:"اكتب رسالة أولاً."
+ },
+ es:{
+  subtitle:"Chat privado con tus amigos.",username:"Usuario",language:"Idioma de la aplicación",
+  login:"Entrar",loginNote:"El nombre de usuario solo se puede elegir una vez.",
+  search:"🔎 Buscar amigos",searchPlaceholder:"Buscar usuario...",find:"Buscar",
+  friends:"👥 Mis amigos",requests:"📨 Solicitudes",account:"El usuario no se puede cambiar.",
+  add:"+ Añadir",sent:"Enviado",accept:"Aceptar",reject:"Rechazar",emptyFriends:"Aún no tienes amigos.",
+  emptyRequests:"No hay solicitudes.",noResults:"Usuario no encontrado.",
+  chat:"Chat privado",message:"Escribe un mensaje...",send:"Enviar",back:"Volver",
+  usernameInvalid:"El usuario debe tener entre 3 y 20 caracteres.",loginError:"Error: ",
+  usernameTaken:"El usuario ya existe.",requestSent:"Solicitud enviada.",
+  requestError:"No se pudo enviar.",accepted:"Solicitud aceptada.",rejected:"Solicitud rechazada.",
+  messageError:"Error al enviar.",noMessage:"No hay mensajes.",searchError:"Error de búsqueda.",
+  already:"Ya sois amigos o existe una solicitud.",loading:"Cargando...",
+  accountError:"No se pudo cargar la cuenta.",loginAgain:"Recarga la página.",
+  saved:"El usuario no se puede cambiar.",requestFailed:"La acción falló.",
+  tooShort:"Escribe al menos 2 caracteres.",typeMessage:"Escribe un mensaje primero."
+ },
+ fr:{
+  subtitle:"Discussion privée avec tes amis.",username:"Nom d'utilisateur",language:"Langue",
+  login:"Connexion",loginNote:"Le nom d'utilisateur ne peut être défini qu'une seule fois.",
+  search:"🔎 Trouver des amis",searchPlaceholder:"Rechercher un nom...",find:"Rechercher",
+  friends:"👥 Mes amis",requests:"📨 Demandes reçues",account:"Le nom d'utilisateur ne peut pas être changé.",
+  add:"+ Ajouter",sent:"Envoyé",accept:"Accepter",reject:"Refuser",emptyFriends:"Aucun ami.",
+  emptyRequests:"Aucune demande.",noResults:"Utilisateur introuvable.",
+  chat:"Discussion privée",message:"Écrire un message...",send:"Envoyer",back:"Retour",
+  usernameInvalid:"Le nom doit contenir 3 à 20 caractères.",loginError:"Échec: ",
+  usernameTaken:"Nom déjà utilisé.",requestSent:"Demande envoyée.",requestError:"Échec de l'envoi.",
+  accepted:"Demande acceptée.",rejected:"Demande refusée.",messageError:"Échec du message.",
+  noMessage:"Aucun message.",searchError:"Recherche impossible.",already:"Déjà amis ou demande existante.",
+  loading:"Chargement...",accountError:"Compte introuvable.",loginAgain:"Recharge la page.",
+  saved:"Le nom ne peut pas être modifié.",requestFailed:"Échec de l'action.",
+  tooShort:"Entrez au moins 2 caractères.",typeMessage:"Écrivez un message."
+ },
+ de:{
+  subtitle:"Privater Chat mit deinen Freunden.",username:"Benutzername",language:"App-Sprache",
+  login:"Anmelden",loginNote:"Der Benutzername kann nur einmal festgelegt werden.",
+  search:"🔎 Freunde suchen",searchPlaceholder:"Benutzername suchen...",find:"Suchen",
+  friends:"👥 Meine Freunde",requests:"📨 Anfragen",account:"Der Benutzername kann nicht geändert werden.",
+  add:"+ Hinzufügen",sent:"Gesendet",accept:"Annehmen",reject:"Ablehnen",emptyFriends:"Noch keine Freunde.",
+  emptyRequests:"Keine Anfragen.",noResults:"Benutzer nicht gefunden.",
+  chat:"Privater Chat",message:"Nachricht schreiben...",send:"Senden",back:"Zurück",
+  usernameInvalid:"Der Name muss 3–20 Zeichen haben.",loginError:"Anmeldung fehlgeschlagen: ",
+  usernameTaken:"Name bereits vergeben.",requestSent:"Anfrage gesendet.",requestError:"Senden fehlgeschlagen.",
+  accepted:"Anfrage angenommen.",rejected:"Anfrage abgelehnt.",messageError:"Nachricht fehlgeschlagen.",
+  noMessage:"Keine Nachrichten.",searchError:"Suche fehlgeschlagen.",already:"Bereits befreundet oder Anfrage vorhanden.",
+  loading:"Lädt...",accountError:"Konto konnte nicht geladen werden.",loginAgain:"Seite neu laden.",
+  saved:"Der Name kann nicht geändert werden.",requestFailed:"Aktion fehlgeschlagen.",
+  tooShort:"Mindestens 2 Zeichen eingeben.",typeMessage:"Schreibe zuerst eine Nachricht."
+ },
+ pt:{
+  subtitle:"Conversa privada com seus amigos.",username:"Nome de usuário",language:"Idioma do aplicativo",
+  login:"Entrar",loginNote:"O nome de usuário só pode ser definido uma vez.",
+  search:"🔎 Encontrar amigos",searchPlaceholder:"Buscar usuário...",find:"Buscar",
+  friends:"👥 Meus amigos",requests:"📨 Solicitações",account:"O nome de usuário não pode ser alterado.",
+  add:"+ Adicionar",sent:"Enviado",accept:"Aceitar",reject:"Recusar",emptyFriends:"Ainda não há amigos.",
+  emptyRequests:"Nenhuma solicitação.",noResults:"Usuário não encontrado.",
+  chat:"Conversa privada",message:"Escreva uma mensagem...",send:"Enviar",back:"Voltar",
+  usernameInvalid:"O nome deve ter de 3 a 20 caracteres.",loginError:"Falha ao entrar: ",
+  usernameTaken:"Nome já utilizado.",requestSent:"Solicitação enviada.",requestError:"Falha ao enviar.",
+  accepted:"Solicitação aceita.",rejected:"Solicitação recusada.",messageError:"Falha ao enviar mensagem.",
+  noMessage:"Nenhuma mensagem.",searchError:"Falha na busca.",already:"Já são amigos ou há solicitação.",
+  loading:"Carregando...",accountError:"Não foi possível carregar a conta.",loginAgain:"Atualize a página.",
+  saved:"O nome não pode ser alterado.",requestFailed:"Ação falhou.",
+  tooShort:"Digite pelo menos 2 caracteres.",typeMessage:"Digite uma mensagem primeiro."
+ },
+ ru:{
+  subtitle:"Личный чат с друзьями.",username:"Имя пользователя",language:"Язык приложения",
+  login:"Войти",loginNote:"Имя пользователя можно задать только один раз.",
+  search:"🔎 Найти друзей",searchPlaceholder:"Поиск имени...",find:"Поиск",
+  friends:"👥 Мои друзья",requests:"📨 Запросы",account:"Имя пользователя нельзя изменить.",
+  add:"+ Добавить",sent:"Отправлено",accept:"Принять",reject:"Отклонить",emptyFriends:"Друзей пока нет.",
+  emptyRequests:"Нет запросов.",noResults:"Пользователь не найден.",
+  chat:"Личный чат",message:"Написать сообщение...",send:"Отправить",back:"Назад",
+  usernameInvalid:"Имя должно содержать 3–20 символов.",loginError:"Ошибка входа: ",
+  usernameTaken:"Имя уже занято.",requestSent:"Запрос отправлен.",requestError:"Не удалось отправить.",
+  accepted:"Запрос принят.",rejected:"Запрос отклонён.",messageError:"Ошибка отправки сообщения.",
+  noMessage:"Сообщений нет.",searchError:"Ошибка поиска.",already:"Вы уже друзья или запрос существует.",
+  loading:"Загрузка...",accountError:"Не удалось загрузить аккаунт.",loginAgain:"Обновите страницу.",
+  saved:"Имя пользователя нельзя изменить.",requestFailed:"Действие не выполнено.",
+  tooShort:"Введите минимум 2 символа.",typeMessage:"Сначала напишите сообщение."
+ },
+ th:{
+  subtitle:"แชทส่วนตัวกับเพื่อน",username:"ชื่อผู้ใช้",language:"ภาษาแอป",
+  login:"เข้าสู่ระบบ",loginNote:"ตั้งชื่อผู้ใช้ได้เพียงครั้งเดียว",
+  search:"🔎 ค้นหาเพื่อน",searchPlaceholder:"ค้นหาชื่อผู้ใช้...",find:"ค้นหา",
+  friends:"👥 เพื่อนของฉัน",requests:"📨 คำขอที่ได้รับ",account:"ไม่สามารถเปลี่ยนชื่อผู้ใช้ได้",
+  add:"+ เพิ่ม",sent:"ส่งแล้ว",accept:"ยอมรับ",reject:"ปฏิเสธ",emptyFriends:"ยังไม่มีเพื่อน",
+  emptyRequests:"ไม่มีคำขอ",noResults:"ไม่พบผู้ใช้",chat:"แชทส่วนตัว",
+  message:"เขียนข้อความ...",send:"ส่ง",back:"กลับ",
+  usernameInvalid:"ชื่อผู้ใช้ต้องมี 3–20 ตัวอักษร",loginError:"เข้าสู่ระบบไม่สำเร็จ: ",
+  usernameTaken:"ชื่อผู้ใช้นี้ถูกใช้แล้ว",requestSent:"ส่งคำขอแล้ว",requestError:"ส่งคำขอไม่สำเร็จ",
+  accepted:"ยอมรับคำขอแล้ว",rejected:"ปฏิเสธคำขอแล้ว",messageError:"ส่งข้อความไม่สำเร็จ",
+  noMessage:"ยังไม่มีข้อความ",searchError:"ค้นหาไม่สำเร็จ",already:"เป็นเพื่อนแล้วหรือมีคำขออยู่",
+  loading:"กำลังโหลด...",accountError:"โหลดบัญชีไม่ได้",loginAgain:"โปรดโหลดหน้าใหม่",
+  saved:"ไม่สามารถเปลี่ยนชื่อได้",requestFailed:"ดำเนินการไม่สำเร็จ",
+  tooShort:"กรอกอย่างน้อย 2 ตัวอักษร",typeMessage:"กรุณาเขียนข้อความก่อน"
+ },
+ vi:{
+  subtitle:"Trò chuyện riêng với bạn bè.",username:"Tên người dùng",language:"Ngôn ngữ ứng dụng",
+  login:"Đăng nhập",loginNote:"Tên người dùng chỉ có thể đặt một lần.",
+  search:"🔎 Tìm bạn bè",searchPlaceholder:"Tìm tên người dùng...",find:"Tìm",
+  friends:"👥 Bạn bè",requests:"📨 Lời mời",account:"Không thể thay đổi tên người dùng.",
+  add:"+ Thêm",sent:"Đã gửi",accept:"Chấp nhận",reject:"Từ chối",emptyFriends:"Chưa có bạn bè.",
+  emptyRequests:"Không có lời mời.",noResults:"Không tìm thấy người dùng.",
+  chat:"Trò chuyện riêng",message:"Viết tin nhắn...",send:"Gửi",back:"Quay lại",
+  usernameInvalid:"Tên phải có từ 3 đến 20 ký tự.",loginError:"Đăng nhập thất bại: ",
+  usernameTaken:"Tên đã được sử dụng.",requestSent:"Đã gửi lời mời.",requestError:"Không gửi được lời mời.",
+  accepted:"Đã chấp nhận.",rejected:"Đã từ chối.",messageError:"Gửi tin nhắn thất bại.",
+  noMessage:"Chưa có tin nhắn.",searchError:"Tìm kiếm thất bại.",already:"Đã là bạn hoặc lời mời đã tồn tại.",
+  loading:"Đang tải...",accountError:"Không thể tải tài khoản.",loginAgain:"Vui lòng tải lại trang.",
+  saved:"Không thể thay đổi tên.",requestFailed:"Thao tác thất bại.",
+  tooShort:"Nhập ít nhất 2 ký tự.",typeMessage:"Hãy viết tin nhắn trước."
+ },
+ hi:{
+  subtitle:"दोस्तों के साथ निजी चैट।",username:"उपयोगकर्ता नाम",language:"ऐप की भाषा",
+  login:"लॉग इन",loginNote:"उपयोगकर्ता नाम केवल एक बार सेट किया जा सकता है।",
+  search:"🔎 दोस्त खोजें",searchPlaceholder:"उपयोगकर्ता खोजें...",find:"खोजें",
+  friends:"👥 मेरे दोस्त",requests:"📨 अनुरोध",account:"उपयोगकर्ता नाम बदला नहीं जा सकता।",
+  add:"+ जोड़ें",sent:"भेजा गया",accept:"स्वीकार करें",reject:"अस्वीकार करें",emptyFriends:"अभी कोई दोस्त नहीं।",
+  emptyRequests:"कोई अनुरोध नहीं।",noResults:"उपयोगकर्ता नहीं मिला।",
+  chat:"निजी चैट",message:"संदेश लिखें...",send:"भेजें",back:"वापस",
+  usernameInvalid:"नाम 3–20 अक्षरों का होना चाहिए।",loginError:"लॉगिन विफल: ",
+  usernameTaken:"यह नाम पहले से उपयोग में है।",requestSent:"अनुरोध भेजा गया।",
+  requestError:"अनुरोध नहीं भेजा जा सका।",accepted:"अनुरोध स्वीकार किया गया।",
+  rejected:"अनुरोध अस्वीकार किया गया।",messageError:"संदेश भेजने में विफल।",
+  noMessage:"कोई संदेश नहीं।",searchError:"खोज विफल।",already:"पहले से दोस्त हैं या अनुरोध मौजूद है।",
+  loading:"लोड हो रहा है...",accountError:"खाता लोड नहीं हो सका।",loginAgain:"पेज फिर से लोड करें।",
+  saved:"नाम बदला नहीं जा सकता।",requestFailed:"कार्रवाई विफल।",
+  tooShort:"कम से कम 2 अक्षर लिखें।",typeMessage:"पहले संदेश लिखें।"
+ }
+};
+
+function t(key){
+ return (LANG[currentLanguage]||LANG.id)[key]||LANG.id[key]||key;
+}
+function toast(message){
+ const el=document.getElementById("toast");
+ el.textContent=message;el.style.display="block";
+ clearTimeout(toastTimer);
+ toastTimer=setTimeout(()=>el.style.display="none",3000);
+}
+function safeText(value){
+ return String(value??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+function avatarLetter(name){
+ return safeText((name||"?").charAt(0).toUpperCase());
+}
+function setLanguageOptions(value){
+ document.getElementById("languageSelect").value=value;
+ document.getElementById("appLanguage").value=value;
+}
+function applyLanguage(){
+ const keys={
+  loginSubtitle:"subtitle",usernameLabel:"username",languageLabel:"language",
+  loginButton:"login",loginNote:"loginNote",searchTitle:"search",
+  searchInput:"searchPlaceholder",searchButton:"find",friendsTitle:"friends",
+  requestsTitle:"requests",accountNote:"account"
+ };
+ for(const id in keys){
+  const el=document.getElementById(id);
+  if(!el)continue;
+  const value=t(keys[id]);
+  if(id==="searchInput")el.placeholder=value;
+  else el.textContent=value;
+ }
+ document.getElementById("friendsTab").textContent=t("friends");
+ document.getElementById("requestsTab").textContent=t("requests");
+ document.getElementById("messageInput").placeholder=t("message");
+ document.getElementById("sendButton").textContent="➤";
+}
+function changeLanguage(value){
+ currentLanguage=LANG[value]?value:"id";
+ localStorage.setItem("drawchat_language",currentLanguage);
+ setLanguageOptions(currentLanguage);
+ applyLanguage();
+ if(currentUser){
+  loadFriends();
+  if(currentTab==="requests")loadRequests();
+ }
+}
+function showTab(tab){
+ currentTab=tab;
+ document.getElementById("friendsTab").classList.toggle("active",tab==="friends");
+ document.getElementById("requestsTab").classList.toggle("active",tab==="requests");
+ document.getElementById("friendsPanel").classList.toggle("hidden",tab!=="friends");
+ document.getElementById("requestsPanel").classList.toggle("hidden",tab!=="requests");
+ if(tab==="friends")loadFriends();
+ else loadRequests();
+}
+function usernameValid(name){
+ return /^[a-zA-Z0-9_]{3,20}$/.test(name);
+}
+
+async function login(){
+ const button=document.getElementById("loginButton");
+ const username=document.getElementById("usernameInput").value.trim();
+ currentLanguage=document.getElementById("languageSelect").value||"id";
+ applyLanguage();
+
+ if(!usernameValid(username)){
+  toast(t("usernameInvalid"));return;
+ }
+ button.disabled=true;
+ button.textContent=t("loading");
+
+ try{
+  let {data:{session},error:sessionError}=await db.auth.getSession();
+  if(sessionError)throw sessionError;
+
+  if(!session){
+   const result=await db.auth.signInAnonymously();
+   if(result.error)throw result.error;
+   session=result.data.session;
+  }
+  currentUser=session.user;
+
+  // Periksa apakah akun ini sudah memiliki username.
+  const existing=await db.from("profiles")
+   .select("id,username")
+   .eq("id",currentUser.id)
+   .maybeSingle();
+
+  if(existing.error)throw existing.error;
+
+  if(existing.data){
+   myUsername=existing.data.username;
+   if(!myUsername)throw new Error("Profile username is empty");
+   if(username.toLowerCase()!==myUsername.toLowerCase()){
+    toast(t("saved"));
+   }
+  }else{
+   const {data:duplicate,error:duplicateError}=await db
+    .from("profiles").select("id").ilike("username",username).limit(1);
+   if(duplicateError)throw duplicateError;
+   if(duplicate&&duplicate.length){
+    throw new Error("USERNAME_TAKEN");
+   }
+
+   const {error:insertError}=await db.from("profiles").insert({
+    id:currentUser.id,username:username
+   });
+   if(insertError){
+    if(insertError.code==="23505")throw new Error("USERNAME_TAKEN");
+    throw insertError;
+   }
+   myUsername=username;
+  }
+
+  localStorage.setItem("drawchat_language",currentLanguage);
+  openApp();
+ }catch(error){
+  console.error(error);
+  toast(error.message==="USERNAME_TAKEN"?t("usernameTaken"):t("loginError")+error.message);
+  // Jangan sign out otomatis; sesi anonim mungkin sudah terbentuk.
+ }finally{
+  button.disabled=false;
+  button.textContent=t("login");
+ }
+}
+
+function openApp(){
+ document.getElementById("login").classList.add("hidden");
+ document.getElementById("app").classList.remove("hidden");
+ document.getElementById("myName").textContent="@"+myUsername;
+ setLanguageOptions(currentLanguage);
+ applyLanguage();
+ showTab("friends");
+ setupRealtime();
+}
+
+async function restoreSession(){
+ currentLanguage=localStorage.getItem("drawchat_language")||"id";
+ if(!LANG[currentLanguage])currentLanguage="id";
+ setLanguageOptions(currentLanguage);
+ applyLanguage();
+
+ try{
+  const {data:{session},error}=await db.auth.getSession();
+  if(error)throw error;
+  if(!session)return;
+  currentUser=session.user;
+
+  const {data,error:profileError}=await db.from("profiles")
+   .select("id,username").eq("id",currentUser.id).maybeSingle();
+
+  if(profileError)throw profileError;
+  if(!data){
+   // Akun anonim baru yang belum mempunyai username.
+   document.getElementById("login").classList.remove("hidden");
+   document.getElementById("usernameInput").placeholder="Pilih username";
+   return;
+  }
+  myUsername=data.username;
+  openApp();
+ }catch(error){
+  console.error(error);
+  toast(t("accountError"));
+ }
+}
+
+async function searchUsers(){
+ const input=document.getElementById("searchInput");
+ const query=input.value.trim();
+ const box=document.getElementById("results");
+ box.innerHTML="";
+ if(query.length<2){toast(t("tooShort"));return}
+
+ box.innerHTML='<div class="empty">'+safeText(t("loading"))+'</div>';
+ try{
+  const {data,error}=await db.rpc("search_profiles",{search_text:query});
+  if(error)throw error;
+  box.innerHTML="";
+  if(!data||!data.length){
+   box.innerHTML='<div class="empty">'+safeText(t("noResults"))+'</div>';
+   return;
+  }
+  data.forEach(user=>{
+   const row=document.createElement("div");
+   row.className="item";
+   row.innerHTML=`
+    <div class="avatar">${avatarLetter(user.username)}</div>
+    <div class="iteminfo"><strong>${safeText(user.username)}</strong>
+     <span class="small muted">@${safeText(user.username)}</span></div>
+    <div class="actions"><button class="primary">${safeText(t("add"))}</button></div>`;
+   row.querySelector("button").onclick=()=>sendRequest(user.id);
+   box.appendChild(row);
+  });
+ }catch(error){
+  console.error(error);
+  box.innerHTML="";
+  toast(t("searchError")+" "+error.message);
+ }
+}
+
+async function sendRequest(receiverId){
+ try{
+  const {data:existing,error:checkError}=await db.from("friend_requests")
+   .select("id,status,sender_id,receiver_id")
+   .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUser.id})`);
+  if(checkError)throw checkError;
+
+  if(existing&&existing.some(r=>r.status==="accepted"||r.status==="pending")){
+   toast(t("already"));return;
+  }
+
+  // Hapus permintaan lama yang ditolak agar boleh mengirim ulang.
+  if(existing&&existing.length){
+   for(const old of existing){
+    if(old.status==="rejected"&&old.sender_id===currentUser.id){
+     await db.from("friend_requests").delete().eq("id",old.id);
+    }
+   }
+  }
+
+  const {error}=await db.from("friend_requests").insert({
+   sender_id:currentUser.id,receiver_id:receiverId,status:"pending"
+  });
+  if(error)throw error;
+  toast(t("requestSent"));
+ }catch(error){
+  console.error(error);
+  toast(t("requestError")+" "+error.message);
+ }
+}
+
+async function loadFriends(){
+ if(!currentUser)return;
+ const box=document.getElementById("friends");
+ box.innerHTML='<div class="empty">'+safeText(t("loading"))+'</div>';
+ try{
+  const {data,error}=await db.from("friend_requests")
+   .select("sender_id,receiver_id,status")
+   .eq("status","accepted")
+   .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`);
+  if(error)throw error;
+
+  const ids=[...new Set((data||[]).map(r=>
+   r.sender_id===currentUser.id?r.receiver_id:r.sender_id
+  ))];
+  box.innerHTML="";
+  if(!ids.length){
+   box.innerHTML='<div class="empty">'+safeText(t("emptyFriends"))+'</div>';
+   return;
+  }
+
+  const {data:profiles,error:profileError}=await db.from("profiles")
+   .select("id,username").in("id",ids);
+  if(profileError)throw profileError;
+
+  (profiles||[]).forEach(friend=>{
+   const row=document.createElement("div");
+   row.className="item";
+   row.innerHTML=`
+    <div class="avatar">${avatarLetter(friend.username)}</div>
+    <div class="iteminfo"><strong>${safeText(friend.username)}</strong>
+    <span class="small muted">${safeText(t("chat"))}</span></div>
+    <div class="actions"><button class="primary">${safeText(t("chat"))}</button></div>`;
+   row.querySelector("button").onclick=()=>openChat(friend);
+   box.appendChild(row);
+  });
+ }catch(error){
+  console.error(error);
+  box.innerHTML='<div class="empty">'+safeText(error.message)+'</div>';
+ }
+}
+
+async function loadRequests(){
+ if(!currentUser)return;
+ const box=document.getElementById("requests");
+ box.innerHTML='<div class="empty">'+safeText(t("loading"))+'</div>';
+ try{
+  const {data,error}=await db.from("friend_requests")
+   .select("id,sender_id,created_at")
+   .eq("receiver_id",currentUser.id).eq("status","pending")
+   .order("created_at",{ascending:false});
+  if(error)throw error;
+  box.innerHTML="";
+  if(!data||!data.length){
+   box.innerHTML='<div class="empty">'+safeText(t("emptyRequests"))+'</div>';
+   return;
+  }
+
+  const ids=data.map(r=>r.sender_id);
+  const {data:profiles,error:profileError}=await db.from("profiles")
+   .select("id,username").in("id",ids);
+  if(profileError)throw profileError;
+  const map={};
+  (profiles||[]).forEach(p=>map[p.id]=p.username);
+
+  data.forEach(request=>{
+   const name=map[request.sender_id]||"Unknown";
+   const row=document.createElement("div");
+   row.className="item";
+   row.innerHTML=`
+    <div class="avatar">${avatarLetter(name)}</div>
+    <div class="iteminfo"><strong>${safeText(name)}</strong>
+    <span class="small muted">${safeText(t("requests"))}</span></div>
+    <div class="actions">
+     <button class="primary accept">${safeText(t("accept"))}</button>
+     <button class="danger reject">${safeText(t("reject"))}</button>
+    </div>`;
+   row.querySelector(".accept").onclick=()=>answerRequest(request.id,"accepted");
+   row.querySelector(".reject").onclick=()=>answerRequest(request.id,"rejected");
+   box.appendChild(row);
+  });
+ }catch(error){
+  console.error(error);
+  box.innerHTML='<div class="empty">'+safeText(error.message)+'</div>';
+ }
+}
+
+async function answerRequest(id,status){
+ try{
+  const {data,error}=await db.from("friend_requests")
+   .update({status})
+   .eq("id",id).eq("receiver_id",currentUser.id)
+   .eq("status","pending").select("id");
+  if(error)throw error;
+  if(!data||!data.length)throw new Error("Request not found");
+  toast(status==="accepted"?t("accepted"):t("rejected"));
+  loadRequests();
+  loadFriends();
+ }catch(error){
+  console.error(error);
+  toast(t("requestFailed")+" "+error.message);
+ }
+}
+
+async function openChat(friend){
+ activeFriend=friend;
+ document.getElementById("homeView").classList.add("hidden");
+ document.getElementById("chatView").classList.remove("hidden");
+ document.getElementById("chatName").textContent=friend.username;
+ document.getElementById("chatAvatar").textContent=avatarLetter(friend.username);
+ document.getElementById("chatStatus").textContent=t("chat");
+ await loadMessages();
+ document.getElementById("messageInput").focus();
+}
+
+function closeChat(){
+ activeFriend=null;
+ document.getElementById("chatView").classList.add("hidden");
+ document.getElementById("homeView").classList.remove("hidden");
+}
+
+async function loadMessages(){
+ if(!activeFriend||!currentUser)return;
+ const box=document.getElementById("chatMessages");
+ box.innerHTML='<div class="empty">'+safeText(t("loading"))+'</div>';
+ const friendId=activeFriend.id;
+ try{
+  const filter=`and(sender_id.eq.${currentUser.id},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${currentUser.id})`;
+  const {data,error}=await db.from("private_messages")
+   .select("id,sender_id,receiver_id,body,created_at")
+   .or(filter).order("created_at",{ascending:true}).limit(5000);
+  if(error)throw error;
+  if(!activeFriend||activeFriend.id!==friendId)return;
+  renderMessages(data||[]);
+ }catch(error){
+  console.error(error);
+  box.innerHTML='<div class="empty">'+safeText(error.message)+'</div>';
+ }
+}
+
+function renderMessages(messages){
+ const box=document.getElementById("chatMessages");
+ box.innerHTML="";
+ if(!messages.length){
+  box.innerHTML='<div class="empty">'+safeText(t("noMessage"))+'</div>';
+  return;
+ }
+ messages.forEach(message=>{
+  const mine=message.sender_id===currentUser.id;
+  const bubble=document.createElement("div");
+  bubble.className="bubble"+(mine?" mine":"");
+  const date=new Date(message.created_at);
+  const time=date.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+  bubble.innerHTML=`${safeText(message.body)}<time>${time}</time>`;
+  box.appendChild(bubble);
+ });
+ box.scrollTop=box.scrollHeight;
+}
+
+async function sendMessage(event){
+ event.preventDefault();
+ if(!activeFriend)return;
+ const input=document.getElementById("messageInput");
+ const body=input.value.trim();
+ if(!body){toast(t("typeMessage"));return}
+ const receiver=activeFriend.id;
+ const button=document.getElementById("sendButton");
+ button.disabled=true;
+ try{
+  const {error}=await db.from("private_messages").insert({
+   sender_id:currentUser.id,receiver_id:receiver,body
+  });
+  if(error)throw error;
+  input.value="";
+  await loadMessages();
+ }catch(error){
+  console.error(error);
+  toast(t("messageError")+" "+error.message);
+ }finally{
+  button.disabled=false;
+  input.focus();
+ }
+}
+
+function setupRealtime(){
+ if(realtimeChannel){
+  db.removeChannel(realtimeChannel);
+  realtimeChannel=null;
+ }
+ realtimeChannel=db.channel("draw-chat-"+currentUser.id)
+  .on("postgres_changes",{
+ event:"*",schema:"public",table:"friend_requests"
+},payload=>{
+ const request=payload.new;
+
+ if(
+  payload.eventType==="INSERT" &&
+  request.receiver_id===currentUser.id &&
+  request.status==="pending"
+ ){
+  playNotification("request");
+ }
+
+ if(currentTab==="friends")loadFriends();
+ if(currentTab==="requests")loadRequests();
 })
-.then(html => {
-  document.open();
-  document.write(html);
-  document.close();
-})
-.catch(error => {
-  document.getElementById("status").textContent =
-    "Gagal memuat Draw Chat: " + error.message;
+  .on("postgres_changes",{
+   event:"INSERT",schema:"public",table:"private_messages"
+  },payload=>{
+   const msg=payload.new;
+   if(!activeFriend)return;
+   const isThisChat=
+    (msg.sender_id===currentUser.id&&msg.receiver_id===activeFriend.id)||
+    (msg.sender_id===activeFriend.id&&msg.receiver_id===currentUser.id);
+   if(isThisChat){
+ if(msg.sender_id!==currentUser.id){
+  playNotification("message");
+ }
+ loadMessages();
+}
+  })
+  .subscribe();
+}
+
+document.addEventListener("visibilitychange",()=>{
+ if(!document.hidden&&currentUser){
+  if(currentTab==="friends")loadFriends();
+  if(currentTab==="requests")loadRequests();
+  if(activeFriend)loadMessages();
+ }
 });
+
+restoreSession();
 </script>
 </body>
 </html>
