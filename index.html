@@ -5,7 +5,8 @@
 <meta name="google-site-verification" content="lISxt2ZoP-hGu5yY6kDMfLWy9ADixy6tvv04QNqu64g" />
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Draw Chat</title>
+<title>Draw Chat Cool - Chat Privat Bersama Teman</title>
+<meta name="description" content="Draw Chat Cool adalah website untuk chatting privat bersama teman, mencari teman, dan mengirim pesan secara online.">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
@@ -943,7 +944,7 @@ function setupRealtime(){
    const msg=payload.new;
    if(!activeFriend)return;
    const isThisChat=
-    (msg.sender_id===currentUser.id&&msg.receiver_id===activeFriend.id)||
+    (msg.sender_id===currentUser.id&&msqg.receiver_id===activeFriend.id)||
     (msg.sender_id===activeFriend.id&&msg.receiver_id===currentUser.id);
    if(isThisChat){
  if(msg.sender_id!==currentUser.id){
